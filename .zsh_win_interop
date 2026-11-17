@@ -1,0 +1,26 @@
+code() {
+  local target args
+  target=$(realpath "${1:-.}")
+  if [[ -n "$VSCODE_IPC_HOOK_CLI" ]] && command -v code >/dev/null 2>&1; then
+    command code "$target"
+    return
+  fi
+  if [[ -d "$target" ]]; then
+    args="--remote ssh-remote+ubuntu-vm \"$target\""
+  else
+    args="--file-uri \"vscode-remote://ssh-remote+ubuntu-vm$target\""
+  fi
+  ssh -q Patricio@192.168.1.159 "powershell -NoProfile -Command \"Set-Content -Path 'C:\ProgramData\ssh-gui\cmd.txt' -Value 'code $args'; Start-ScheduledTask -TaskName 'SSH-GUI-Launcher'\""
+}
+explorer() {
+  local target win_path
+  target=$(realpath "${1:-.}")
+  if [[ "$target" == /mnt/c* ]]; then
+    win_path="C:${target#/mnt/c}"
+    win_path="${win_path//\//\\}"
+  else
+    win_path="C:\\Users\\Patricio"
+  fi
+  ssh -q Patricio@192.168.1.159 "powershell -NoProfile -Command \"Set-Content -Path 'C:\ProgramData\ssh-gui\cmd.txt' -Value 'explorer $win_path'; Start-ScheduledTask -TaskName 'SSH-GUI-Launcher'\""
+}
+alias explorer.exe="explorer"

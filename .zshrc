@@ -118,3 +118,57 @@ source $ZSH/oh-my-zsh.sh
 alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
+
+# WSL2-style Windows interoperability paths
+export PATH="$PATH:/mnt/c/Windows:/mnt/c/Windows/System32:/mnt/c/Users/Patricio/AppData/Local/Programs/Microsoft VS Code/bin"
+
+# WSL2-style Windows interoperability paths
+export PATH="$PATH:/mnt/c/Windows:/mnt/c/Windows/System32:/mnt/c/Users/Patricio/AppData/Local/Programs/Microsoft VS Code/bin"
+
+# Copy stdin directly to Windows Terminal clipboard via OSC 52
+clip() {
+  local data
+  data=$(base64 | tr -d '\n')
+  printf "\033]52;c;%s\a" "$data"
+}
+
+
+
+
+
+
+# Launch Windows VS Code connected to this VM via Remote-SSH
+code() {
+  local target args
+  target=$(realpath "${1:-.}")
+
+  if [[ -n "$VSCODE_IPC_HOOK_CLI" ]] && command -v code >/dev/null 2>&1; then
+    command code "$target"
+    return
+  fi
+
+  if [[ -d "$target" ]]; then
+    args="--remote ssh-remote+ubuntu-vm \"$target\""
+  else
+    args="--file-uri \"vscode-remote://ssh-remote+ubuntu-vm$target\""
+  fi
+
+  ssh -q Patricio@192.168.1.159 "powershell -NoProfile -Command \"Set-Content -Path 'C:\ProgramData\ssh-gui\cmd.txt' -Value 'code $args'; Start-ScheduledTask -TaskName 'SSH-GUI-Launcher'\""
+}
+
+# Open Windows File Explorer from Zsh
+explorer() {
+  local target win_path
+  target=$(realpath "${1:-.}")
+
+  if [[ "$target" == /mnt/c* ]]; then
+    win_path="C:${target#/mnt/c}"
+    win_path="${win_path//\//\\}"
+  else
+    win_path="C:\\Users\\Patricio"
+  fi
+
+  ssh -q Patricio@192.168.1.159 "powershell -NoProfile -Command \"Set-Content -Path 'C:\ProgramData\ssh-gui\cmd.txt' -Value 'explorer $win_path'; Start-ScheduledTask -TaskName 'SSH-GUI-Launcher'\""
+}
+alias explorer.exe='explorer'
+[[ -f ~/.zsh_win_interop ]] && source ~/.zsh_win_interop
